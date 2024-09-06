@@ -19,14 +19,14 @@ const Modal = ({ closeModal }) => {
       email: formData.get('email'),
       password: formData.get('password'),
     };
-
+  
     try {
-      const response = await fetch('/api/users/signup', {  // Ensure this matches your backend route
+      const response = await fetch('http://localhost:5000/api/users/signup', { // <-- Backend API URL
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
       });
-
+  
       if (response.ok) {
         toast.success('Successfully signed up!');
         closeModal();
@@ -38,7 +38,7 @@ const Modal = ({ closeModal }) => {
       toast.error('An error occurred. Please try again.');
     }
   };
-
+  
   return (
     <div className="fixed inset-0 bg-gray-900 bg-opacity-50 backdrop-blur-sm flex justify-center items-center z-50">
       <div className="bg-white rounded-lg p-6 shadow-lg max-w-md w-full relative">
