@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { forwardRef } from 'react'
 import img1 from '../assets/market/rice.jpg';
 import img2 from '../assets/market/wheat.jpg';
@@ -12,6 +12,7 @@ import img9 from '../assets/market/Orange.jpg';
 import img10 from '../assets/market/grape.jpg';
 import img11 from '../assets/market/apple.jpg';
 import img12 from '../assets/market/pineapple.jpg';
+import axios from 'axios';
 
 // Sample product data
 const products = [
@@ -30,23 +31,49 @@ const products = [
 ];
 
 const Marketplace = forwardRef((props, ref) => {
-  // Pagination control for displaying 6 items per page
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 6;
-
-  // Calculate total number of pages
   const totalPages = Math.ceil(products.length / itemsPerPage);
-
-  // Get current items for the current page
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
   const currentItems = products.slice(indexOfFirstItem, indexOfLastItem);
 
-  // Function to handle page change
+  // State for storing offers
+  const [offers, setOffers] = useState({});
+  const [offerPrice, setOfferPrice] = useState({}); // Keep track of offer price input
+
+  // Fetch existing offers when component mounts
+  useEffect(() => {
+    const fetchOffers = async () => {
+      try {
+        const response = await axios.get('/api/offers'); // Assuming this endpoint gets all offers
+        setOffers(response.data);
+      } catch (error) {
+        console.error("Error fetching offers:", error);
+      }
+    };
+    fetchOffers();
+  }, []);
+
+  // Handle price negotiation (submitting offer)
+  const submitOffer = async (productId, offerPrice) => {
+    try {
+      const response = await axios.post('/api/negotiate', { produceId: productId, offerPrice });
+      alert('Offer submitted successfully!');
+      setOffers((prevOffers) => ({
+        ...prevOffers,
+        [productId]: response.data.offers,  // Update offers for the product
+      }));
+    } catch (error) {
+      console.error('Error submitting offer:', error);
+    }
+  };
+
+  // Handle page change for pagination
   const handlePageChange = (pageNumber) => setCurrentPage(pageNumber);
 
   return (
-    <section id='Marketplace' ref={ref} className="bg-gray-200 py-12">
+    <section id="Marketplace" ref={ref} className="bg-gray-200 py-12">
       <div className="container mx-auto text-center">
         <h2 className="text-3xl font-bold mb-8">Market Place</h2>
 
@@ -62,6 +89,29 @@ const Marketplace = forwardRef((props, ref) => {
               <h3 className="text-xl font-semibold">{product.name}</h3>
               <p>Seller: {product.seller}</p>
               <p>Price: {product.price}</p>
+
+              {/* Offer input and button */}
+              <input
+                type="number"
+                value={offerPrice[product.id] || ''}
+                onChange={(e) => setOfferPrice({ ...offerPrice, [product.id]: e.target.value })}
+                placeholder="Enter your offer price"
+                className="mt-4 p-2 border rounded-lg w-full"
+              />
+              <button
+                onClick={() => submitOffer(product.id, offerPrice[product.id])}
+                className="bg-blue-500 text-white py-2 px-4 rounded-lg mt-4 hover:bg-blue-700"
+              >
+                Submit Offer
+              </button>
+
+              {/* Display Offers */}
+              {offers[product.id] && offers[product.id].map((offer) => (
+                <div key={offer._id} className={`mt-4 ${offer.status === 'accepted' ? 'bg-green-200' : 'bg-red-200'} p-2 rounded-lg`}>
+                  <p>Offer Price: Rs. {offer.offerPrice}</p>
+                  <p>Status: {offer.status}</p>
+                </div>
+              ))}
             </div>
           ))}
         </div>
