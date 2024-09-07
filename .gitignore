@@ -1,3 +1,5 @@
+# Ignore environment variables
 .env
-.vscode/
+
+# Ignore node modules
 node_modules/
