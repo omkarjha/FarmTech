@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { forwardRef } from 'react'
+import { forwardRef } from 'react';
 import img1 from '../assets/market/rice.jpg';
 import img2 from '../assets/market/wheat.jpg';
 import img3 from '../assets/market/caroot.jpg';
@@ -40,7 +40,7 @@ const Marketplace = forwardRef((props, ref) => {
 
   // State for storing offers
   const [offers, setOffers] = useState({});
-  const [offerPrice, setOfferPrice] = useState({}); // Keep track of offer price input
+  const [offerDetails, setOfferDetails] = useState({}); // Track both price and quantity
 
   // Fetch existing offers when component mounts
   useEffect(() => {
@@ -55,14 +55,20 @@ const Marketplace = forwardRef((props, ref) => {
     fetchOffers();
   }, []);
 
-  // Handle price negotiation (submitting offer)
-  const submitOffer = async (productId, offerPrice) => {
+  // Handle price and quantity negotiation (submitting offer)
+  const submitOffer = async (productId) => {
+    const { price, quantity } = offerDetails[productId] || {}; // Get offer details for this product
+    if (!price || !quantity) {
+      alert('Please provide both price and quantity.');
+      return;
+    }
+
     try {
-      const response = await axios.post('/api/negotiate', { produceId: productId, offerPrice });
+      const response = await axios.post('/api/negotiate', { produceId: productId, offerPrice: price, offerQuantity: quantity });
       alert('Offer submitted successfully!');
       setOffers((prevOffers) => ({
         ...prevOffers,
-        [productId]: response.data.offers,  // Update offers for the product
+        [productId]: response.data.offers, // Update offers for the product
       }));
     } catch (error) {
       console.error('Error submitting offer:', error);
@@ -81,25 +87,32 @@ const Marketplace = forwardRef((props, ref) => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {currentItems.map((product) => (
             <div key={product.id} className="border p-4 bg-white rounded-lg shadow-lg hover:shadow-2xl transform hover:scale-105 transition-transform duration-300">
-              <img 
-                src={product.image} 
-                alt={product.name} 
-                className="w-full h-48 object-cover rounded-lg mb-4 hover:opacity-90 transition-opacity duration-300" 
+              <img
+                src={product.image}
+                alt={product.name}
+                className="w-full h-48 object-cover rounded-lg mb-4 hover:opacity-90 transition-opacity duration-300"
               />
               <h3 className="text-xl font-semibold">{product.name}</h3>
               <p>Seller: {product.seller}</p>
               <p>Price: {product.price}</p>
 
-              {/* Offer input and button */}
+              {/* Offer inputs for price and quantity */}
               <input
                 type="number"
-                value={offerPrice[product.id] || ''}
-                onChange={(e) => setOfferPrice({ ...offerPrice, [product.id]: e.target.value })}
+                value={offerDetails[product.id]?.price || ''}
+                onChange={(e) => setOfferDetails({ ...offerDetails, [product.id]: { ...offerDetails[product.id], price: e.target.value } })}
                 placeholder="Enter your offer price"
                 className="mt-4 p-2 border rounded-lg w-full"
               />
+              <input
+                type="number"
+                value={offerDetails[product.id]?.quantity || ''}
+                onChange={(e) => setOfferDetails({ ...offerDetails, [product.id]: { ...offerDetails[product.id], quantity: e.target.value } })}
+                placeholder="Enter quantity"
+                className="mt-2 p-2 border rounded-lg w-full"
+              />
               <button
-                onClick={() => submitOffer(product.id, offerPrice[product.id])}
+                onClick={() => submitOffer(product.id)}
                 className="bg-blue-500 text-white py-2 px-4 rounded-lg mt-4 hover:bg-blue-700"
               >
                 Submit Offer
@@ -109,6 +122,7 @@ const Marketplace = forwardRef((props, ref) => {
               {offers[product.id] && offers[product.id].map((offer) => (
                 <div key={offer._id} className={`mt-4 ${offer.status === 'accepted' ? 'bg-green-200' : 'bg-red-200'} p-2 rounded-lg`}>
                   <p>Offer Price: Rs. {offer.offerPrice}</p>
+                  <p>Quantity: {offer.offerQuantity}</p>
                   <p>Status: {offer.status}</p>
                 </div>
               ))}
@@ -122,9 +136,7 @@ const Marketplace = forwardRef((props, ref) => {
             <button
               key={index + 1}
               onClick={() => handlePageChange(index + 1)}
-              className={`mx-1 px-4 py-2 rounded-lg ${
-                currentPage === index + 1 ? 'bg-blue-500 text-white' : 'bg-gray-300'
-              }`}
+              className={`mx-1 px-4 py-2 rounded-lg ${currentPage === index + 1 ? 'bg-blue-500 text-white' : 'bg-gray-300'}`}
             >
               {index + 1}
             </button>
